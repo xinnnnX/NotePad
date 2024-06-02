@@ -18,8 +18,9 @@ namespace NotePad
             InitializeComponent();
         }
 
-        private bool isUndo = false;
-        private Stack<string> textHistory = new Stack<string>();
+        private bool isUndoRedo = false;
+        private Stack<string> undoStack = new Stack<string>();
+        private Stack<string> redoStack = new Stack<string>();
         private const int MaxHistoryCount = 10;
 
         private void btnOpen_Click(object sender, EventArgs e)
@@ -89,33 +90,46 @@ namespace NotePad
 
         private void btnUndo_Click(object sender, EventArgs e)
         {
-            isUndo = true;
-            if (textHistory.Count > 1)
+            if (undoStack.Count > 1)
             {
-                textHistory.Pop();
-                richTextBox1.Text = textHistory.Peek();
+                isUndoRedo = true;
+                redoStack.Push(undoStack.Pop());
+                richTextBox1.Text = undoStack.Peek();
+                UpdateListBox();
+                isUndoRedo = false;
             }
-            UpdateListBox();
-            isUndo = false;
+        }
+
+        private void btnRedo_Click(object sender, EventArgs e)
+        {
+            if (redoStack.Count > 0)
+            {
+                isUndoRedo = true;
+                undoStack.Push(redoStack.Pop());
+                richTextBox1.Text = undoStack.Peek();
+                UpdateListBox();
+                isUndoRedo = false;
+            }
         }
 
         private void richTextBox1_TextChanged(object sender, EventArgs e)
         {
-            if (isUndo == false)
+            if (isUndoRedo == false)
             {
-                textHistory.Push(richTextBox1.Text);
+                undoStack.Push(richTextBox1.Text);
+                redoStack.Clear();
 
-                if (textHistory.Count > MaxHistoryCount)
+                if (undoStack.Count > MaxHistoryCount)
                 {
                     Stack<string> tmpStack = new Stack<string>();
                     for (int i = 0; i < MaxHistoryCount; i++)
                     {
-                        tmpStack.Push(textHistory.Pop());
+                        tmpStack.Push(undoStack.Pop());
                     }
-                    textHistory.Clear();
+                    undoStack.Clear();
                     foreach (string item in tmpStack)
                     {
-                        textHistory.Push(item);
+                        undoStack.Push(item);
                     }
                 }
                 UpdateListBox();
@@ -126,7 +140,7 @@ namespace NotePad
         {
             listUndo.Items.Clear();
 
-            foreach (string item in textHistory)
+            foreach (string item in undoStack)
             {
                 listUndo.Items.Add(item);
             }
