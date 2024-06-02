@@ -16,6 +16,79 @@ namespace NotePad
         public Form1()
         {
             InitializeComponent();
+
+            InitializeFontComboBox();
+            InitializeFontSizeComboBox();
+            InitializeFontStyleComboBox();
+        }
+
+        private void InitializeFontComboBox()
+        {
+            foreach (FontFamily font in FontFamily.Families)
+            {
+                comboBoxFont.Items.Add(font.Name);
+            }
+            comboBoxFont.SelectedIndex = 0;
+        }
+
+        private void InitializeFontSizeComboBox()
+        {
+            for (int i = 8; i <= 72; i += 2)
+            {
+                comboBoxSize.Items.Add(i);
+            }
+            comboBoxSize.SelectedIndex = 2;
+        }
+
+        private void InitializeFontStyleComboBox()
+        {
+            comboBoxStyle.Items.Add(FontStyle.Regular.ToString());
+            comboBoxStyle.Items.Add(FontStyle.Bold.ToString());
+            comboBoxStyle.Items.Add(FontStyle.Italic.ToString());
+            comboBoxStyle.Items.Add(FontStyle.Underline.ToString());
+            comboBoxStyle.Items.Add(FontStyle.Strikeout.ToString());                                                
+            comboBoxStyle.SelectedIndex = 0;
+        }
+
+        private int selectionStart = 0;
+        private int selectionLength = 0;
+        private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            selectionStart = richTextBox1.SelectionStart;
+            selectionLength = richTextBox1.SelectionLength;
+
+            if (richTextBox1.SelectionFont != null)
+            {
+                string selectedFont = comboBoxFont.SelectedItem?.ToString();
+                string selectedSizeStr = comboBoxSize.SelectedItem?.ToString();
+                string selectedStyleStr = comboBoxStyle.SelectedItem?.ToString();
+
+                if (selectedFont != null && selectedSizeStr != null && selectedStyleStr != null)
+                {
+                    float selectedSize = float.Parse(selectedSizeStr);
+                    FontStyle selectedStyle = (FontStyle)Enum.Parse(typeof(FontStyle), selectedStyleStr);
+
+                    Font currentFont = richTextBox1.SelectionFont;
+                    FontStyle newStyle = currentFont.Style;
+
+                    if (comboBoxStyle.SelectedItem.ToString() == FontStyle.Bold.ToString())
+                        newStyle = FontStyle.Bold;
+                    else if (comboBoxStyle.SelectedItem.ToString() == FontStyle.Italic.ToString())
+                        newStyle = FontStyle.Italic;
+                    else if (comboBoxStyle.SelectedItem.ToString() == FontStyle.Underline.ToString())
+                        newStyle = FontStyle.Underline;
+                    else if (comboBoxStyle.SelectedItem.ToString() == FontStyle.Strikeout.ToString())
+                        newStyle = FontStyle.Strikeout;
+                    else
+                        newStyle = FontStyle.Regular;
+
+                    Font newFont = new Font(selectedFont, selectedSize, newStyle);
+                    richTextBox1.SelectionFont = newFont;
+                }
+            }
+
+            richTextBox1.Focus();
+            richTextBox1.Select(selectionStart, selectionLength);
         }
 
         private bool isUndoRedo = false;
