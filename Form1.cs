@@ -99,7 +99,7 @@ namespace NotePad
         private void btnOpen_Click(object sender, EventArgs e)
         {
             openFileDialog1.Title = "選擇檔案";
-            openFileDialog1.Filter = "文字檔案 (*.txt)|*.txt|所有檔案 (*.*)|*.*";
+            openFileDialog1.Filter = "RTF格式檔案 (*.rtf)|*.rtf|文字檔案 (*.txt)|*.txt|所有檔案 (*.*)|*.*";
             openFileDialog1.FilterIndex = 1;
             openFileDialog1.InitialDirectory = "C:\\";
             openFileDialog1.Multiselect = true;
@@ -111,14 +111,24 @@ namespace NotePad
                 try
                 {
                     string selectedFileName = openFileDialog1.FileName;
+                    string fileExtension = Path.GetExtension(selectedFileName).ToLower();
 
-                    using (FileStream fileStream = new FileStream(selectedFileName, FileMode.Open, FileAccess.Read))
+                    if (fileExtension == ".txt")
                     {
-                        using (StreamReader streamReader = new StreamReader(fileStream, Encoding.UTF8))
+ 
+                        using (FileStream fileStream = new FileStream(selectedFileName, FileMode.Open, FileAccess.Read))
                         {
-                            richTextBox1.Text = streamReader.ReadToEnd();
+                            using (StreamReader streamReader = new StreamReader(fileStream, Encoding.UTF8))
+                            {
+                                richTextBox1.Text = streamReader.ReadToEnd();
+                            }
                         }
                     }
+                    else if (fileExtension == ".rtf")
+                    {
+                        richTextBox1.LoadFile(selectedFileName, RichTextBoxStreamType.RichText);
+                    }
+
                 }
                 catch (Exception ex)
                 {
@@ -134,25 +144,43 @@ namespace NotePad
         private void btnSave_Click(object sender, EventArgs e)
         {
             saveFileDialog1.Title = "儲存檔案";
-            saveFileDialog1.Filter = "文字檔案 (*.txt)|*.txt|所有檔案 (*.*)|*.*";
+            saveFileDialog1.Filter = "RTF格式檔案 (*.rtf)|*.rtf|文字檔案 (*.txt)|*.txt|所有檔案 (*.*)|*.*";
             saveFileDialog1.FilterIndex = 1;
             saveFileDialog1.InitialDirectory = "C:\\";
 
             DialogResult result = saveFileDialog1.ShowDialog();
+
+            FileStream fileStream = null;
 
             if (result == DialogResult.OK)
             {
                 try
                 {
                     string saveFileName = saveFileDialog1.FileName;
+                    string extension = Path.GetExtension(saveFileName);
 
-                    File.WriteAllText(saveFileName, richTextBox1.Text);
+                    using (fileStream = new FileStream(saveFileName, FileMode.Create, FileAccess.Write))
+                    {
+                        if (extension.ToLower() == ".txt")
+                        {
+                            byte[] data = Encoding.UTF8.GetBytes(richTextBox1.Text);
+                            fileStream.Write(data, 0, data.Length);
+                        }
+                        else if (extension.ToLower() == ".rtf")
+                        {
+                            richTextBox1.SaveFile(fileStream, RichTextBoxStreamType.RichText);
+                        }
+                    }
 
                     MessageBox.Show("檔案儲存成功。", "訊息", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("儲存檔案時發生錯誤: " + ex.Message, "錯誤訊息", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    fileStream.Close();
                 }
             }
             else
