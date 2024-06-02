@@ -92,8 +92,8 @@ namespace NotePad
         }
 
         private bool isUndoRedo = false;
-        private Stack<string> undoStack = new Stack<string>();
-        private Stack<string> redoStack = new Stack<string>();
+        private Stack<MemoryStream> undoStack = new Stack<MemoryStream>();
+        private Stack<MemoryStream> redoStack = new Stack<MemoryStream>();
         private const int MaxHistoryCount = 10;
 
         private void btnOpen_Click(object sender, EventArgs e)
@@ -195,7 +195,8 @@ namespace NotePad
             {
                 isUndoRedo = true;
                 redoStack.Push(undoStack.Pop());
-                richTextBox1.Text = undoStack.Peek();
+                MemoryStream lastSavedState = undoStack.Peek();
+                LoadFromMemory(lastSavedState);
                 UpdateListBox();
                 isUndoRedo = false;
             }
@@ -207,7 +208,8 @@ namespace NotePad
             {
                 isUndoRedo = true;
                 undoStack.Push(redoStack.Pop());
-                richTextBox1.Text = undoStack.Peek();
+                MemoryStream lastSavedState = undoStack.Peek();
+                LoadFromMemory(lastSavedState);
                 UpdateListBox();
                 isUndoRedo = false;
             }
@@ -217,18 +219,18 @@ namespace NotePad
         {
             if (isUndoRedo == false)
             {
-                undoStack.Push(richTextBox1.Text);
+                SaveCurrentStateToStack();
                 redoStack.Clear();
 
                 if (undoStack.Count > MaxHistoryCount)
                 {
-                    Stack<string> tmpStack = new Stack<string>();
+                    Stack<MemoryStream> tmpStack = new Stack<MemoryStream>();
                     for (int i = 0; i < MaxHistoryCount; i++)
                     {
                         tmpStack.Push(undoStack.Pop());
                     }
                     undoStack.Clear();
-                    foreach (string item in tmpStack)
+                    foreach (MemoryStream item in tmpStack)
                     {
                         undoStack.Push(item);
                     }
@@ -241,10 +243,23 @@ namespace NotePad
         {
             listUndo.Items.Clear();
 
-            foreach (string item in undoStack)
+            foreach (MemoryStream item in undoStack)
             {
                 listUndo.Items.Add(item);
             }
+        }
+
+        private void SaveCurrentStateToStack()
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            richTextBox1.SaveFile(memoryStream, RichTextBoxStreamType.RichText);
+            undoStack.Push(memoryStream);
+        }
+
+        private void LoadFromMemory(MemoryStream memoryStream)
+        {
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            richTextBox1.LoadFile(memoryStream, RichTextBoxStreamType.RichText);
         }
     }
 }
