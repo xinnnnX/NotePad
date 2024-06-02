@@ -18,6 +18,10 @@ namespace NotePad
             InitializeComponent();
         }
 
+        private bool isUndo = false;
+        private Stack<string> textHistory = new Stack<string>();
+        private const int MaxHistoryCount = 10;
+
         private void btnOpen_Click(object sender, EventArgs e)
         {
             openFileDialog1.Title = "選擇檔案";
@@ -55,7 +59,7 @@ namespace NotePad
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            saveFileDialog1.Title = "選擇檔案";
+            saveFileDialog1.Title = "儲存檔案";
             saveFileDialog1.Filter = "文字檔案 (*.txt)|*.txt|所有檔案 (*.*)|*.*";
             saveFileDialog1.FilterIndex = 1;
             saveFileDialog1.InitialDirectory = "C:\\";
@@ -66,23 +70,65 @@ namespace NotePad
             {
                 try
                 {
-                    string selectedFileName = saveFileDialog1.FileName;
+                    string saveFileName = saveFileDialog1.FileName;
 
-                    using (FileStream fileStream = new FileStream(selectedFileName, FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        byte[] array = Encoding.UTF8.GetBytes(richTextBox1.Text);
-                        Stream input = new MemoryStream(array);
-                        input.CopyTo(fileStream);
-                    }
+                    File.WriteAllText(saveFileName, richTextBox1.Text);
+
+                    MessageBox.Show("檔案儲存成功。", "訊息", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("讀取檔案時發生錯誤: " + ex.Message, "錯誤訊息", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("儲存檔案時發生錯誤: " + ex.Message, "錯誤訊息", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
             {
-                MessageBox.Show("使用者取消了選擇檔案操作。", "訊息", MessageBoxButtons.OKCancel, MessageBoxIcon.Exclamation);
+                MessageBox.Show("使用者取消了儲存檔案操作。", "訊息", MessageBoxButtons.OKCancel, MessageBoxIcon.Exclamation);
+            }
+        }
+
+        private void btnUndo_Click(object sender, EventArgs e)
+        {
+            isUndo = true;
+            if (textHistory.Count > 1)
+            {
+                textHistory.Pop();
+                richTextBox1.Text = textHistory.Peek();
+            }
+            UpdateListBox();
+            isUndo = false;
+        }
+
+        private void richTextBox1_TextChanged(object sender, EventArgs e)
+        {
+            if (isUndo == false)
+            {
+                textHistory.Push(richTextBox1.Text);
+
+                if (textHistory.Count > MaxHistoryCount)
+                {
+                    Stack<string> tmpStack = new Stack<string>();
+                    for (int i = 0; i < MaxHistoryCount; i++)
+                    {
+                        tmpStack.Push(textHistory.Pop());
+                    }
+                    textHistory.Clear();
+                    foreach (string item in tmpStack)
+                    {
+                        textHistory.Push(item);
+                    }
+                }
+                UpdateListBox();
+            }
+        }
+
+        void UpdateListBox()
+        {
+            listUndo.Items.Clear();
+
+            foreach (string item in textHistory)
+            {
+                listUndo.Items.Add(item);
             }
         }
     }
